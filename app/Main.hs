@@ -6,7 +6,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Cont
 import Control.Applicative
 import Control.Concurrent
-import qualified Control.Exception as E
+import Control.Exception as E hiding (handle)
 import Data.Unique
 import Text.Read (readMaybe)
 
@@ -23,16 +23,16 @@ main = do
     makeWorld port
 
 bracket_demo = (`runContT` return) $ do
-    fh <- ContT $ E.bracket
+    fh <- ContT $ bracket
             (openFile "tmp" AppendMode)
             hClose
-    n <- ContT $ E.bracket
+    n <- ContT $ bracket
             (hPutStrLn fh "Gain n" >> return 42)
             (\n -> hPutStrLn fh $ "Finalize n: " ++ show n)
-    l <- ContT $ E.bracket
+    l <- ContT $ bracket
             (hPutStrLn fh "Gain l" >> return 13)
             (\n -> hPutStrLn fh $ "Finalize l: " ++ show n)
---    liftIO $ E.throwIO (E.ErrorCall "heyhey")
+--    liftIO $ throwIO (ErrorCall "heyhey")
     return $ n + l
 
 -- sketch

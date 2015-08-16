@@ -10,7 +10,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Cont
 import Control.Applicative
 import Control.Concurrent
-import qualified Control.Exception as E
+import Control.Exception as E hiding (handle)
 import Control.Lens
 import Control.Lens.TH
 import Data.Unique
@@ -37,7 +37,7 @@ makeFields ''LoginedClient
 acceptLoop :: Port -> (Client -> IO ()) -> IO ()
 acceptLoop port cont = (`runContT` return) $ do
     let portId = PortNumber (fromIntegral port)
-    socket <- ContT $ E.bracket
+    socket <- ContT $ bracket
                             (listenOn portId)
                             (\socket -> putStrLn "...Socket closed" >> sClose socket)
 
@@ -56,7 +56,7 @@ login client cont = do
             return $ LoginedClient (client^.handle) userId name
         logout = \cl -> return ()
 
-    E.bracket login' logout cont
+    bracket login' logout cont
 
 joinRoom :: LoginedClient -> (RoomId -> IO r) -> IO r
 joinRoom loginedClient cont = do
@@ -74,7 +74,7 @@ joinRoom loginedClient cont = do
 
     roomId <- loop
     
-    E.bracket (return roomId) leave cont
+    bracket (return roomId) leave cont
 
 chat :: LoginedClient -> RoomId -> (() -> IO r) -> IO r
 chat = echo
@@ -85,8 +85,8 @@ echo cli roomId cont = go
     go = do
         hPutStr (cli^.handle) "echo>"
         inp <- hGetLine (cli^.handle)
-        case inp of
-            'q':'u':'i':'t':_ -> cont ()
-            _ -> do
+        if take 4 inp == "quit"
+            then cont ()
+            else do
                 hPutStrLn (cli^.handle) inp
                 go
