@@ -34,8 +34,8 @@ makeFields ''Client
 makeFields ''LoginedClient
 
 
-acceptLoop :: Port -> (Client -> IO a) -> IO ()
-acceptLoop port action = (`runContT` return) $ do
+acceptLoop :: Port -> (Client -> IO ()) -> IO ()
+acceptLoop port cont = (`runContT` return) $ do
     let portId = PortNumber (fromIntegral port)
     socket <- ContT $ E.bracket
                             (listenOn portId)
@@ -44,10 +44,9 @@ acceptLoop port action = (`runContT` return) $ do
     liftIO $ forever $ do
         (hdl, hostname, portNumber) <- accept socket
         let client = Client hdl
-        forkFinally (action client) (\_ -> hClose hdl)
+        forkFinally (cont client) (\_ -> hClose hdl)
 
 login :: Client -> (LoginedClient -> IO r) -> IO r
---login :: Client -> ContT r IO LoginedClient
 login client cont = do
     let
         login' = do

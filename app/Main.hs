@@ -7,14 +7,11 @@ import Control.Monad.Trans.Cont
 import Control.Applicative
 import Control.Concurrent
 import qualified Control.Exception as E
-import Control.Lens
-import Control.Lens.TH
 import Data.Unique
 import Text.Read (readMaybe)
 
 import System.IO
 import System.Environment (getArgs)
-import Network
 
 import Lib
 
@@ -40,9 +37,9 @@ bracket_demo = (`runContT` return) $ do
 
 -- sketch
 makeWorld :: Port -> IO ()
-makeWorld port = do
-    acceptLoop port $ \ client -> (`runContT` return) $ do
-        logined <- ContT $ login client
-        roomId <- ContT $ joinRoom logined
-        ContT $ chat logined roomId
+makeWorld port = (`runContT` return) $ do
+    client <- ContT $ acceptLoop port
+    logined <- ContT $ login client
+    roomId <- ContT $ joinRoom logined
+    ContT $ chat logined roomId
 
