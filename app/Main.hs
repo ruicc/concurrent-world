@@ -20,7 +20,7 @@ main = do
     print =<< bracket_demo
 
     port:_ <- map read <$> getArgs
-    makeWorld port
+    launchServer port
 
 bracket_demo = (`runContT` return) $ do
     fh <- ContT $ bracket
@@ -36,10 +36,36 @@ bracket_demo = (`runContT` return) $ do
     return $ n + l
 
 -- sketch
-makeWorld :: Port -> IO ()
-makeWorld port = (`runContT` return) $ do
+launchServer :: Port -> IO ()
+launchServer port = (`runContT` return) $ do
     client <- ContT $ acceptLoop port
-    logined <- ContT $ login client
-    roomId <- ContT $ joinRoom logined
-    ContT $ chat logined roomId
+    loginedClient <- ContT $ login client
+    roomId <- ContT $ joinRoom loginedClient
+    ContT $ chat loginedClient roomId
 
+
+---- NPC
+--data NPC = NPC { _npcId :: Int }
+--
+---- NPC spawner
+--launchNpcServer :: Port -> IO ()
+--launchNpcServer port (`runContT` return) $ do
+--    npc <- ContT $ genNpcLoop port
+--    loop npc
+--  where
+--    loop npc = forever $ do
+--        mUsers <- ContT $ searchUser npc
+--        case mUsers of
+--            Nothing -> return ()
+--            Just users -> forM_ users $ \user -> do
+--                mChan <- ContT $ npc `tryConnect` user
+--                case mChan of
+--                    Nothing -> return ()
+--                    Just chan = do
+--                        ContT $ greet chan npc "Heyhey!"
+--                        mResponse <- ContT $ wait chan
+--                        case mResponse of
+--                            Nothing -> return ()
+--                            Just response -> do
+--                                ContT $ greet chan "Oh thanks for your response, human living. Take care!"
+--                                kill npc
